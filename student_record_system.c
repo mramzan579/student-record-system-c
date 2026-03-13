@@ -1,8 +1,9 @@
 /*
  * student_record_system.c
- * Student Record System — Commit 2
- * Add the add_student() function so the user can
- * store a new student record with ID, name, age, and marks.
+ * Student Record System in C  
+ * Add the view_students() function so the user can
+ * see all stored records in a clean formatted table
+ * with a grade calculated from each student's marks.
  */
 
 #include <stdio.h>
@@ -14,7 +15,7 @@
 #define NAME_LEN       50
 #define FILE_NAME     "students.txt"
 
-// Student struct
+/* ── Student struct ─────────────────────────────────────────── */
 struct Student {
     int   id;
     char  name[NAME_LEN];
@@ -60,16 +61,13 @@ void show_menu(void)
    add_student()
    Adds a new student record to the students array.
    Reads ID, name, age, and marks from the user.
-   Checks for duplicate IDs before saving — every student
-   must have a unique ID number.
-   Checks if the array is full before adding.
+   Checks for duplicate IDs before saving.
 ================================================================ */
 void add_student(void)
 {
     int i;
     int new_id;
 
-    /* Stop if maximum capacity is reached */
     if (student_count >= MAX_STUDENTS) {
         printf("\n  Record list is full! Cannot add more students.\n");
         return;
@@ -77,13 +75,10 @@ void add_student(void)
 
     printf("\n--- Add New Student ---\n");
 
-    /* Read the student ID */
     printf("  Enter student ID : ");
     scanf("%d", &new_id);
     clear_input_buffer();
 
-    /* Check if this ID already exists in the array.
-       Every student must have a unique ID — no duplicates allowed. */
     for (i = 0; i < student_count; i++) {
         if (students[i].id == new_id) {
             printf("\n  ID %d already exists! Each student needs a unique ID.\n",
@@ -92,44 +87,97 @@ void add_student(void)
         }
     }
 
-    /* ID is unique — save it */
     students[student_count].id = new_id;
 
-    /* Read student name using fgets — handles names with spaces */
     printf("  Enter name       : ");
     fgets(students[student_count].name, NAME_LEN, stdin);
     students[student_count].name[strcspn(students[student_count].name, "\n")] = '\0';
 
-    /* Read age */
     printf("  Enter age        : ");
     scanf("%d", &students[student_count].age);
     clear_input_buffer();
 
-    /* Read marks — uses %f because marks is a float */
     printf("  Enter marks      : ");
     scanf("%f", &students[student_count].marks);
     clear_input_buffer();
 
-    /* Increment counter — record is now officially saved */
     student_count++;
 
     printf("\n  Student added successfully!\n");
     printf("  Total students: %d\n", student_count);
 }
 
-// ── Main
+/* ================================================================
+   view_students()
+   Prints all student records in a clean formatted table.
+   Calculates and displays a letter grade for each student
+   based on their marks:
+     90 and above  = A
+     80 to 89      = B
+     70 to 79      = C
+     60 to 69      = D
+     below 60      = F
+   Uses %-Nd format specifiers to align columns neatly.
+================================================================ */
+void view_students(void)
+{
+    int  i;
+    char grade;
+
+    printf("\n--- All Student Records ---\n");
+
+    /* Check if the list is empty */
+    if (student_count == 0) {
+        printf("  No records found. Add some students first.\n");
+        return;
+    }
+
+    printf("  Total students: %d\n\n", student_count);
+
+    /*
+     * %-5s means: print a string, left-aligned, in 5 characters wide.
+     * %-25s means: print a string, left-aligned, in 25 characters wide.
+     * This keeps all columns lined up neatly in a table.
+     */
+    printf("  %-5s %-25s %-5s %-8s %s\n",
+           "ID", "Name", "Age", "Marks", "Grade");
+    printf("  --------------------------------------------------\n");
+
+    /* Loop through every student and print one row per student */
+    for (i = 0; i < student_count; i++) {
+
+        /* Calculate grade from marks */
+        if      (students[i].marks >= 90) grade = 'A';
+        else if (students[i].marks >= 80) grade = 'B';
+        else if (students[i].marks >= 70) grade = 'C';
+        else if (students[i].marks >= 60) grade = 'D';
+        else                              grade = 'F';
+
+        /* Print one row — %.2f prints float with exactly 2 decimal places */
+        printf("  %-5d %-25s %-5d %-8.2f %c\n",
+               students[i].id,
+               students[i].name,
+               students[i].age,
+               students[i].marks,
+               grade);
+    }
+
+    printf("  --------------------------------------------------\n");
+}
+
+/* ── Main ───────────────────────────────────────────────────── */
 int main(void)
 {
     int choice;
 
-    /* Welcome banner */
+    //welcome banner
     printf("========================================\n");
     printf("  STUDENT RECORD MANAGEMENT SYSTEM      \n");
     printf("========================================\n");
     printf("  Manage student records with ease.\n");
     printf("  Maximum capacity: %d students.\n", MAX_STUDENTS);
 
-    /* Main loop */
+  //main loop   
     do {
         show_menu();
         scanf("%d", &choice);
@@ -140,7 +188,7 @@ int main(void)
                 add_student();
                 break;
             case 2:
-                printf("\n  [Coming soon] View All Students\n");
+                view_students();
                 break;
             case 3:
                 printf("\n  [Coming soon] Search Student\n");
