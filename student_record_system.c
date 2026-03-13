@@ -1,20 +1,25 @@
 /*
  * student_record_system.c
- * Student Record System 
- * Add search_student() to find a record by ID and
- * update_student() to edit an existing student's details.
+ *
+ * A console-based Student Record Management System written in C.
+ * Add, view, search, update, delete, and save student records.
+ * All records are stored in an array of structs.
+ *
+ * Compile : gcc student_record_system.c -o student_system
+ * Run     : ./student_system
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-//constants
+// Constants
 #define MAX_STUDENTS  100
 #define NAME_LEN       50
 #define FILE_NAME     "students.txt"
 
-/* ── Student struct ─────────────────────────────────────────── */
+//Student struct
+/* Groups all information about one student into a single unit. */
 struct Student {
     int   id;
     char  name[NAME_LEN];
@@ -22,13 +27,14 @@ struct Student {
     float marks;
 };
 
-/* ── Global student list ────────────────────────────────────── */
+//Global student list
 struct Student students[MAX_STUDENTS];
 int student_count = 0;
 
 /* ================================================================
    clear_input_buffer()
    Drains leftover characters from stdin after every scanf.
+   Prevents input bugs when switching between numbers and strings.
 ================================================================ */
 void clear_input_buffer(void)
 {
@@ -40,6 +46,7 @@ void clear_input_buffer(void)
 /* ================================================================
    show_menu()
    Prints the main menu options to the console.
+   Called at the start of every loop in main().
 ================================================================ */
 void show_menu(void)
 {
@@ -203,9 +210,7 @@ void search_student(void)
 /* ================================================================
    update_student()
    Finds a student by ID and lets the user update their
-   name, age, and marks individually.
-   The user can choose which fields to update and skip
-   the rest by pressing Enter — keeping the old value.
+   name, age, and marks one field at a time.
    The ID is never changed — it is the unique identifier.
 ================================================================ */
 void update_student(void)
@@ -224,14 +229,12 @@ void update_student(void)
         return;
     }
 
-    /* Show all records first so user knows which ID to update */
     view_students();
 
     printf("\n  Enter student ID to update: ");
     scanf("%d", &update_id);
     clear_input_buffer();
 
-    /* Find the student with this ID */
     for (i = 0; i < student_count; i++) {
         if (students[i].id == update_id) {
 
@@ -240,35 +243,26 @@ void update_student(void)
             printf("\n  Updating Student ID: %d\n", update_id);
             printf("  Press Enter to keep the current value.\n\n");
 
-            //update name
             printf("  Current name : %s\n", students[i].name);
             printf("  New name     : ");
             fgets(temp_name, NAME_LEN, stdin);
             temp_name[strcspn(temp_name, "\n")] = '\0';
-
-            /* Only update if user typed something new */
             if (strlen(temp_name) > 0) {
                 strcpy(students[i].name, temp_name);
             }
 
-            //update age
             printf("  Current age  : %d\n", students[i].age);
             printf("  New age      : ");
             scanf("%d", &temp_age);
             clear_input_buffer();
-
-            /* Only update if user entered a valid age */
             if (temp_age > 0) {
                 students[i].age = temp_age;
             }
 
-            //update marks
             printf("  Current marks: %.2f\n", students[i].marks);
             printf("  New marks    : ");
             scanf("%f", &temp_marks);
             clear_input_buffer();
-
-            /* Only update if user entered a valid marks value */
             if (temp_marks >= 0) {
                 students[i].marks = temp_marks;
             }
@@ -283,19 +277,139 @@ void update_student(void)
     }
 }
 
-//Main
+/* ================================================================
+   delete_student()
+   Deletes a student record by their ID number.
+   Shows the full list first so the user can see all IDs.
+   Uses the shift technique to fill the gap after deletion —
+   every record after the deleted one moves one step backward.
+   This keeps the array compact with no empty holes.
+================================================================ */
+void delete_student(void)
+{
+    int i, j;
+    int delete_id;
+    int found = 0;
+
+    printf("\n--- Delete Student ---\n");
+
+    if (student_count == 0) {
+        printf("  No records to delete. Add some students first.\n");
+        return;
+    }
+
+    /* Show all records so user knows which ID to delete */
+    view_students();
+
+    printf("\n  Enter student ID to delete: ");
+    scanf("%d", &delete_id);
+    clear_input_buffer();
+
+    /* Find and delete the student with this ID */
+    for (i = 0; i < student_count; i++) {
+        if (students[i].id == delete_id) {
+
+            /*
+             * Shift technique — move every record after the
+             * deleted one backward by one position.
+             * This closes the gap and keeps the array compact.
+             */
+            for (j = i; j < student_count - 1; j++) {
+                students[j] = students[j + 1];
+            }
+
+            /* Reduce the count — last slot is now unused */
+            student_count--;
+            found = 1;
+            break;
+        }
+    }
+
+    if (found) {
+        printf("\n  Student with ID %d deleted successfully!\n", delete_id);
+        printf("  Total students remaining: %d\n", student_count);
+    } else {
+        printf("\n  No student found with ID %d.\n", delete_id);
+    }
+}
+
+/* ================================================================
+   save_to_file()
+   Writes all student records to a text file called students.txt
+   Uses fopen() to open the file, fprintf() to write to it,
+   and fclose() to close it when done.
+   fopen() with "w" mode creates the file if it does not exist
+   and overwrites it if it does.
+================================================================ */
+void save_to_file(void)
+{
+    int   i;
+    char  grade;
+    FILE *file;   /* FILE pointer — needed to work with files in C */
+
+    if (student_count == 0) {
+        printf("\n  No records to save. Add some students first.\n");
+        return;
+    }
+
+    //Open the file in write mode
+    file = fopen(FILE_NAME, "w");
+
+    /* Always check if fopen succeeded — it can fail */
+    if (file == NULL) {
+        printf("\n  Error! Could not open file for writing.\n");
+        return;
+    }
+
+    // Write header to the file 
+    fprintf(file, "========================================\n");
+    fprintf(file, "      STUDENT RECORDS                   \n");
+    fprintf(file, "========================================\n");
+    fprintf(file, "Total Students: %d\n\n", student_count);
+
+    /* Write each student record to the file */
+    for (i = 0; i < student_count; i++) {
+
+        if      (students[i].marks >= 90) grade = 'A';
+        else if (students[i].marks >= 80) grade = 'B';
+        else if (students[i].marks >= 70) grade = 'C';
+        else if (students[i].marks >= 60) grade = 'D';
+        else                              grade = 'F';
+
+        /* fprintf works exactly like printf but writes to a file */
+        fprintf(file, "Student %d:\n",       i + 1);
+        fprintf(file, "  ID    : %d\n",      students[i].id);
+        fprintf(file, "  Name  : %s\n",      students[i].name);
+        fprintf(file, "  Age   : %d\n",      students[i].age);
+        fprintf(file, "  Marks : %.2f\n",    students[i].marks);
+        fprintf(file, "  Grade : %c\n",      grade);
+        fprintf(file, "----------------------------------------\n");
+    }
+
+    //Always close the file after writing
+    fclose(file);
+
+    printf("\n  Records saved to '%s' successfully!\n", FILE_NAME);
+    printf("  Open the file in your project folder to see it.\n");
+}
+
+/* ================================================================
+   main()
+   Entry point. Prints the welcome banner and runs the program
+   in a loop until the user selects Exit.
+================================================================ */
 int main(void)
 {
     int choice;
 
-    /* Welcome banner */
+    // Welcome banner
     printf("========================================\n");
     printf("  STUDENT RECORD MANAGEMENT SYSTEM      \n");
     printf("========================================\n");
     printf("  Manage student records with ease.\n");
     printf("  Maximum capacity: %d students.\n", MAX_STUDENTS);
 
-    /* Main loop */
+    //Main loop — keeps running until user picks Exit
     do {
         show_menu();
         scanf("%d", &choice);
@@ -306,14 +420,12 @@ int main(void)
             case 2: view_students();  break;
             case 3: search_student(); break;
             case 4: update_student(); break;
-            case 5:
-                printf("\n  [Coming soon] Delete Student\n");
-                break;
-            case 6:
-                printf("\n  [Coming soon] Save to File\n");
-                break;
+            case 5: delete_student(); break;
+            case 6: save_to_file();   break;
             case 7:
-                printf("\n  Goodbye!\n");
+                printf("\n========================================\n");
+                printf("  Goodbye! Save your records before exit.\n");
+                printf("========================================\n\n");
                 break;
             default:
                 printf("\n  Invalid choice! Please enter 1 to 7.\n");
