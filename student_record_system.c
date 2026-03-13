@@ -1,37 +1,34 @@
 /*
  * student_record_system.c
- * Student Record System 
- * Set up the project structure, define the Student struct,
- * and build the main menu system.
+ * Student Record System — Commit 2
+ * Add the add_student() function so the user can
+ * store a new student record with ID, name, age, and marks.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Constants 
-#define MAX_STUDENTS  100          /* maximum students allowed   */
-#define NAME_LEN       50          /* maximum length of a name   */
-#define FILE_NAME     "students.txt"  /* output file name        */
+/* ── Constants ──────────────────────────────────────────────── */
+#define MAX_STUDENTS  100
+#define NAME_LEN       50
+#define FILE_NAME     "students.txt"
 
-//Student struct
-/* Groups all information about one student into a single unit.
-   This is the core data structure of the entire program. */
+// Student struct
 struct Student {
     int   id;
     char  name[NAME_LEN];
     int   age;
-    float marks;   /* float stores decimal values like 85.5 */
+    float marks;
 };
 
 /* ── Global student list ────────────────────────────────────── */
-struct Student students[MAX_STUDENTS];  /* holds all records     */
-int student_count = 0;                  /* how many are stored   */
+struct Student students[MAX_STUDENTS];
+int student_count = 0;
 
 /* ================================================================
    clear_input_buffer()
    Drains leftover characters from stdin after every scanf.
-   Prevents input bugs when switching between numbers and strings.
 ================================================================ */
 void clear_input_buffer(void)
 {
@@ -43,7 +40,6 @@ void clear_input_buffer(void)
 /* ================================================================
    show_menu()
    Prints the main menu options to the console.
-   Called at the start of every loop in main().
 ================================================================ */
 void show_menu(void)
 {
@@ -60,7 +56,68 @@ void show_menu(void)
     printf("  Enter your choice: ");
 }
 
-// Main 
+/* ================================================================
+   add_student()
+   Adds a new student record to the students array.
+   Reads ID, name, age, and marks from the user.
+   Checks for duplicate IDs before saving — every student
+   must have a unique ID number.
+   Checks if the array is full before adding.
+================================================================ */
+void add_student(void)
+{
+    int i;
+    int new_id;
+
+    /* Stop if maximum capacity is reached */
+    if (student_count >= MAX_STUDENTS) {
+        printf("\n  Record list is full! Cannot add more students.\n");
+        return;
+    }
+
+    printf("\n--- Add New Student ---\n");
+
+    /* Read the student ID */
+    printf("  Enter student ID : ");
+    scanf("%d", &new_id);
+    clear_input_buffer();
+
+    /* Check if this ID already exists in the array.
+       Every student must have a unique ID — no duplicates allowed. */
+    for (i = 0; i < student_count; i++) {
+        if (students[i].id == new_id) {
+            printf("\n  ID %d already exists! Each student needs a unique ID.\n",
+                   new_id);
+            return;
+        }
+    }
+
+    /* ID is unique — save it */
+    students[student_count].id = new_id;
+
+    /* Read student name using fgets — handles names with spaces */
+    printf("  Enter name       : ");
+    fgets(students[student_count].name, NAME_LEN, stdin);
+    students[student_count].name[strcspn(students[student_count].name, "\n")] = '\0';
+
+    /* Read age */
+    printf("  Enter age        : ");
+    scanf("%d", &students[student_count].age);
+    clear_input_buffer();
+
+    /* Read marks — uses %f because marks is a float */
+    printf("  Enter marks      : ");
+    scanf("%f", &students[student_count].marks);
+    clear_input_buffer();
+
+    /* Increment counter — record is now officially saved */
+    student_count++;
+
+    printf("\n  Student added successfully!\n");
+    printf("  Total students: %d\n", student_count);
+}
+
+// ── Main
 int main(void)
 {
     int choice;
@@ -72,7 +129,7 @@ int main(void)
     printf("  Manage student records with ease.\n");
     printf("  Maximum capacity: %d students.\n", MAX_STUDENTS);
 
-    /* Main loop — keeps running until user picks Exit */
+    /* Main loop */
     do {
         show_menu();
         scanf("%d", &choice);
@@ -80,7 +137,7 @@ int main(void)
 
         switch (choice) {
             case 1:
-                printf("\n  [Coming soon] Add Student\n");
+                add_student();
                 break;
             case 2:
                 printf("\n  [Coming soon] View All Students\n");
